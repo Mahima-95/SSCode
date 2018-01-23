@@ -9,23 +9,23 @@ object KPI1_2 {
     val data = spark.read.textFile("D:\\Mahima\\My Dev Space\\workspace\\WBI_Scala\\HP_And_SK\\Setup box Analysis\\Set_Top_Box_Data.txt").rdd
     val result = data.map(line => {
       var tokens = line.split("\\^")
-      (Integer.parseInt(tokens(2)), line)
-    })
-      .filter(data => {
-        data._1.==(100)
-      })
-      .map(line => {
-        var xmlTags = line._2.split("\\^")
-        (xmlTags(4), line)
-      })
-      .map(data => {
-        var xml = XML.loadString(data._1)
-        var innerTags = xml \\ "nv"
-        var xml0 = XML.loadString(innerTags.theSeq(3).toString())
-        var duration = xml0.attribute("v").get.toString()
-        (duration.max, data)
-      })
-      .sortByKey(false).take(5)
+      (tokens, line)
+    }).filter(data => {
+      data._1(2).equals("100")
+    }).filter(data => {
+      data._1(4).contains("n=\"Duration\"")
+    }).map(line => {
+      var xml = XML.loadString(line._1(4))
+      var innerTags = xml \\ "nv"
+      var duration: Int = 0
+      if (innerTags.theSeq(2).toString().contains("n=\"Duration\"")) {
+        duration = innerTags.theSeq(2).attribute("v").get.toString().toInt
+      } else if (innerTags.theSeq(3).toString().contains("n=\"Duration\"")) {
+        duration = innerTags.theSeq(3).attribute("v").get.toString().toInt
+      }
+      val tokens = line._2.split("\\^")
+      (duration, tokens(4))
+    }).sortByKey(false).take(5)
     result.foreach(println)
     spark.stop
   }
